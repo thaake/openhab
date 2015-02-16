@@ -46,7 +46,7 @@ public class PairingInitialisationSequence implements MessageSequencer {
 	private int pktLostCount = 0;
 	private MaxCulDevice deviceType = MaxCulDevice.UNKNOWN;
 	private MaxCulBindingConfig config;
-	private HashSet<MaxCulBindingConfig> associations;
+	private HashSet<MaxCulBindingConfig> associations = new HashSet<MaxCulBindingConfig>();
 	private Iterator<MaxCulBindingConfig> assocIter;
 	private boolean useFast = true;
 

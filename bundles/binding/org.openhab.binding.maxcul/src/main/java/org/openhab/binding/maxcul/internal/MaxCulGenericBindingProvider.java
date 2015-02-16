@@ -295,7 +295,11 @@ public class MaxCulGenericBindingProvider extends
 		if (associationsMapBuilt == false) {
 			buildAssociationMap();
 		}
-		return associationMap.get(deviceSerial);
+		HashSet<MaxCulBindingConfig> map = associationMap.get(deviceSerial);
+		if (map == null) {
+			return new HashSet<MaxCulBindingConfig>();
+		}
+		return map;
 	}
 
 	@Override

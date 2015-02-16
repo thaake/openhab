@@ -169,6 +169,9 @@ public class MaxCulMsgHandler implements CULListener {
 		Timer timer = null;
 
 		if (msg.readyToSend()) {
+			logger.trace("requires credit: " + msg.requiredCredit());
+			logger.trace("fast send: " + msg.isFastSend());
+			logger.trace("sendQueue size: " + this.sendQueue.size());
 			if (enoughCredit(msg.requiredCredit(), msg.isFastSend())
 					&& this.sendQueue.isEmpty()) {
 				/*

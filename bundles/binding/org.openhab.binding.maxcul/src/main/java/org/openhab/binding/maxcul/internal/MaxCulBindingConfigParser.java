@@ -178,6 +178,12 @@ public class MaxCulBindingConfigParser {
 				cfg.setFeature(MaxCulFeature.VALVE_POS);
 			} else if (configPart.equals("reset")) {
 				cfg.setFeature(MaxCulFeature.RESET);
+			} else if (configPart.equals("contact")) {
+				if (cfg.getDeviceType() != MaxCulDevice.SHUTTER_CONTACT)
+					throw new BindingConfigParseException(
+							"Invalid device feature. Can only use 'contact' on shutter contacts. This is a "
+									+ cfg.getDeviceType());
+				cfg.setFeature(MaxCulFeature.CONTACT);
 			}
 		}
 	}

@@ -27,6 +27,7 @@ import org.openhab.binding.maxcul.internal.messages.PairPingMsg;
 import org.openhab.binding.maxcul.internal.messages.PushButtonMsg;
 import org.openhab.binding.maxcul.internal.messages.PushButtonMsg.PushButtonMode;
 import org.openhab.binding.maxcul.internal.messages.SetTemperatureMsg;
+import org.openhab.binding.maxcul.internal.messages.ShutterContactMsg;
 import org.openhab.binding.maxcul.internal.messages.ThermostatStateMsg;
 import org.openhab.binding.maxcul.internal.messages.TimeInfoMsg;
 import org.openhab.binding.maxcul.internal.messages.WallThermostatControlMsg;
@@ -208,6 +209,15 @@ public class MaxCulBinding extends AbstractBinding<MaxCulBindingProvider>
 					logger.warn("Command not handled for "
 							+ bindingConfig.getDeviceType()
 							+ " that is not OnOffType or DecimalType");
+				}
+				break;
+			case SHUTTER_CONTACT:
+				if (bindingConfig.getFeature() == MaxCulFeature.RESET) {
+					messageHandler.sendReset(bindingConfig.getDevAddr());
+				} else {
+					logger.warn("Command not handled for "
+							+ bindingConfig.getDeviceType()
+							+ " that is not OnOffType");
 				}
 				break;
 			default:
@@ -533,6 +543,30 @@ public class MaxCulBinding extends AbstractBinding<MaxCulBindingProvider>
 				}
 				if (isBroadcast == false)
 					this.messageHandler.sendAck(pbMsg);
+				break;
+			case SHUTTER_CONTACT_STATE:
+				ShutterContactMsg scMsg = new ShutterContactMsg(data);
+				scMsg.printMessage();
+				for (MaxCulBindingProvider provider : super.providers) {
+					Collection<MaxCulBindingConfig> bindingConfigs = provider
+							.getConfigsForRadioAddr(scMsg.srcAddrStr);
+					for (MaxCulBindingConfig bc : bindingConfigs) {
+						String itemName = provider.getItemNameForConfig(bc);
+						if (bc.getFeature() == MaxCulFeature.BATTERY) {
+							eventPublisher
+							.postUpdate(itemName, scMsg
+									.getBatteryLow() ? OnOffType.ON
+									: OnOffType.OFF);
+						} else if (bc.getFeature() == MaxCulFeature.CONTACT) {
+							eventPublisher
+							.postUpdate(itemName, scMsg
+									.getOpened() ? OnOffType.ON
+									: OnOffType.OFF);
+						}
+					}
+				}
+				if (isBroadcast == false)
+					this.messageHandler.sendAck(scMsg);
 				break;
 			default:
 				logger.debug("Unhandled message type " + msgType.toString());
