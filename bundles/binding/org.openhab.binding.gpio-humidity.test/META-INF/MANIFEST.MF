@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Tests for the GPIO Humidity binding
+Bundle-SymbolicName: org.openhab.binding.gpio-humidity.test
+Bundle-Version: 1.6.1
+Bundle-Vendor: openHAB.org
+Fragment-Host: org.openhab.binding.gpio-humidity;bundle-version="1.6.1"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Require-Bundle: org.junit;bundle-version="4.8.1"
