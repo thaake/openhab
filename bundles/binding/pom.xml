@@ -139,6 +139,7 @@
     <module>org.openhab.binding.zibase</module>
     <module>org.openhab.binding.wago</module>
     <module>org.openhab.binding.networkupstools</module>
+	<module>org.openhab.binding.ecobee</module>
 	<module>org.openhab.binding.gpio-pcf8591</module>
 	<module>org.openhab.binding.gpio-switch</module>
 	<module>org.openhab.binding.gpio-humidity</module>
