@@ -114,10 +114,10 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 
 		super.open("/dev/i2c-1");
 		try {
-			byte oldValue = (byte) super.read(registerDir);
+			int oldValue = super.read(registerDir);
 			LOG.debug("reading dir register: "
-					+ Integer.toHexString(oldValue));
-			byte newValue = (byte) (oldValue & ~portAddress);
+					+ Integer.toHexString(oldValue & 0xFF));
+			byte newValue = (byte) (oldValue & 0xFF & ~portAddress);
 			LOG.debug("setting dir register: "
 					+ Integer.toHexString(newValue));
 			boolean res = super.write(registerDir, newValue);
@@ -171,9 +171,9 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 
 		super.open("/dev/i2c-1");
 		try {
-			byte oldValue = super.read(registerDir);
-			LOG.trace("old mask: " + Integer.toHexString(oldValue));
-			byte newValue = (byte) (oldValue | portMask);
+			int oldValue = super.read(registerDir);
+			LOG.trace("old mask: " + Integer.toHexString(oldValue & 0xFF));
+			byte newValue = (byte) ((oldValue & 0xFF) | portMask);
 			LOG.trace("new mask: " + Integer.toHexString(newValue));
 			boolean res = super.write(registerDir, newValue);
 			if (!res) {
@@ -236,15 +236,15 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 
 			while (!isInterrupted()) {
 				MCP23017Device.this.open("/dev/i2c-1");
-				byte read = -1;
+				int read = -1;
 				try {
-					read = (byte) (MCP23017Device.this.read((byte) registerSwitch) & 0xFF);
-					LOG.trace("read value: " + Integer.toHexString(read));
+					read = (MCP23017Device.this.read((byte) registerSwitch) & 0xFF);
+					LOG.trace("read value: " + Integer.toHexString(read & 0xFF));
 				} finally {
 					MCP23017Device.this.close();
 				}
 
-				byte result = (byte) (read & portMask);
+				byte result = (byte) ((read & 0xFF) & portMask);
 				LOG.trace("result: " + Integer.toHexString(result));
 				if (result == portMask) {
 					if (lastSend + MIN_TIME_FOR_NEXT_UPDATE < System

@@ -66,7 +66,7 @@ public abstract class I2CDevice<DC extends I2CConfig, IC extends GpioI2CItemConf
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		while ((data = (I2C.i2cReadByteDirect(this.handle,
 				this.config.getAddress()))) != 0) {
-			baos.write((byte) data);
+			baos.write(data);
 		}
 		
 		try {
@@ -78,7 +78,7 @@ public abstract class I2CDevice<DC extends I2CConfig, IC extends GpioI2CItemConf
 		return baos.toByteArray();
 	}
 
-	public byte read(byte register) {
-		return (byte) I2C.i2cReadByte(this.handle, this.config.getAddress(), register);
+	public int read(byte register) {
+		return I2C.i2cReadByte(this.handle, this.config.getAddress(), register);
 	}
 }
