@@ -24,8 +24,13 @@ public class PCF8591Device extends I2CDevice<PCF8591Config, PCF8591ItemConfig> {
 		if (itemConfig.isIn()) {
 			super.open("/dev/i2c-1");
 			// read 2x, the first returns an incorrect value
-			super.read((byte) (0x40 + itemConfig.getPort()));
 			int read = super.read((byte) (0x40 + itemConfig.getPort()));
+			read = super.read((byte) (0x40 + itemConfig.getPort()));
+			if (read < 0) {
+				LOG.warn("error reading value: {}", read);
+				return org.openhab.core.types.UnDefType.UNDEF;
+			}
+			read = read & 0xFF;
 			int value = (int) Math.rint(read * 100f / 255f);
 			super.close();
 			LOG.debug("reading value: {}, converted to: {}", read, value);
