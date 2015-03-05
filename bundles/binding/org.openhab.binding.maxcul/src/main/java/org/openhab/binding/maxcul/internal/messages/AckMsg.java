@@ -55,6 +55,8 @@ public class AckMsg extends BaseMsg {
 	@Override
 	protected void printFormattedPayload() {
 		logger.debug("\tIs ACK?                  => " + (!this.isNack));
-		logger.debug("\tUnknown ACK payload byte => " + this.payload[1]);
+		if (this.payload.length >= 2) {
+			logger.debug("\tUnknown ACK payload byte => " + this.payload[1]);
+		}
 	}
 }
