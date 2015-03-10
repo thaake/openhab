@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.maxcul.internal;
+package org.openhab.binding.maxcul.dep.internal;
 
 /**
  * Define device types
@@ -15,8 +15,12 @@ package org.openhab.binding.maxcul.internal;
  * @since 1.6.0
  */
 public enum MaxCulDevice {
-	RADIATORTHERMOSTAT(1), RADIATORTHERMOSTATPLUS(2), 
-	WALLTHERMOSTAT(3), SHUTTERCONTACT(4), PUSHBUTTON(5);
+	CUBE(0), RADIATOR_THERMOSTAT(1), RADIATOR_THERMOSTAT_PLUS(2), 
+	WALL_THERMOSTAT(3), SHUTTER_CONTACT(4), PUSH_BUTTON(5),
+	CREDIT_MONITOR(0xfc), // not official MAX!
+	PAIR_MODE(0xfd), // not official MAX!
+	LISTEN_MODE(0xfe), // not official MAX!
+	UNKNOWN(0xff); // not official MAX!
 
 	private final int devType;
 
@@ -33,15 +37,6 @@ public enum MaxCulDevice {
 			if (MaxCulDevice.values()[i].getDeviceTypeInt() == idx)
 				return MaxCulDevice.values()[i];
 		}
-		return null;
-	}
-
-	public static MaxCulDevice parse(String val) {
-		for (MaxCulDevice device : values()) {
-			if (device.name().equalsIgnoreCase(val)) {
-				return device;
-			}
-		}
-		return null;
+		return UNKNOWN;
 	}
 }

@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.maxcul.internal;
+package org.openhab.binding.maxcul.dep.internal;
 
 /**
  * Define binding features
@@ -15,14 +15,5 @@ package org.openhab.binding.maxcul.internal;
  * @since 1.6.0
  */
 public enum MaxCulFeature {
-	SETTEMPERATURE, ACTTEMPERATURE, BATTERY, MODE, SWITCH, VALVEPOS, RESET, CONTACT, UNKNOWN;
-	
-	public static MaxCulFeature parse(String val) {
-		for (MaxCulFeature feature : values()) {
-			if (feature.name().equalsIgnoreCase(val)) {
-				return feature;
-			}
-		}
-		return null;
-	}
+	THERMOSTAT, TEMPERATURE, BATTERY, MODE, SWITCH, VALVE_POS, RESET, CONTACT, UNKNOWN;
 }
