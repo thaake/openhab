@@ -54,6 +54,7 @@ public class MaxCulBinding extends AbstractBinding<MaxCulBindingProvider> implem
 	private int msgCount = 0;
 	private int credit10ms = Integer.MAX_VALUE;
 	private ExecutorService executor = Executors.newFixedThreadPool(1);
+	public static final int MSG_TIMEOUT = 10000;
 	
 	private boolean listen;
 	private boolean pair;
@@ -167,7 +168,7 @@ public class MaxCulBinding extends AbstractBinding<MaxCulBindingProvider> implem
 		
 		if (msg instanceof PairPingMsg && this.pair) {
 			final Sequence sequence = new PairingSequence(this, sequences);
-			executor.submit(sequence);
+			executor.execute(sequence);
 			
 			sequence.addSequenceListener(new SequenceListener() {
 				@Override
@@ -192,7 +193,8 @@ public class MaxCulBinding extends AbstractBinding<MaxCulBindingProvider> implem
 									if (otherDeviceConfig.isPaired()) {
 										{	// one side
 											Sequence sequenceAddLinkPartner = new ServerInitiatedSequence(MaxCulBinding.this, sequences);
-											executor.submit(sequenceAddLinkPartner);
+											logger.info("add new sequence for add link partner");
+											executor.execute(sequenceAddLinkPartner);
 											sequences.add(sequenceAddLinkPartner);
 											sequenceAddLinkPartner.addMsg(new AddLinkPartnerMsg(getMessageNumber(), (byte) 0x00, (byte) 0x00, MAXCUL_ADDRESS, sequence.getSourceDeviceAddress(), otherDeviceConfig.getAddress(), otherDeviceConfig.getDevice()));
 											sequenceAddLinkPartner.addSequenceListener(new SequenceListener() {
@@ -209,7 +211,8 @@ public class MaxCulBinding extends AbstractBinding<MaxCulBindingProvider> implem
 										}
 										{	// other side
 											Sequence sequenceAddLinkPartner = new ServerInitiatedSequence(MaxCulBinding.this, sequences);
-											executor.submit(sequenceAddLinkPartner);
+											logger.info("add new sequence for add link partner");
+											executor.execute(sequenceAddLinkPartner);
 											sequences.add(sequenceAddLinkPartner);
 											sequenceAddLinkPartner.addMsg(new AddLinkPartnerMsg(getMessageNumber(), (byte) 0x00, (byte) 0x00, MAXCUL_ADDRESS, otherDeviceConfig.getAddress(), config.getAddress(), config.getDevice()));
 											sequenceAddLinkPartner.addSequenceListener(new SequenceListener() {

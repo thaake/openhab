@@ -42,19 +42,32 @@ public class PairingSequence extends Sequence {
 			this.sender.send(pairPongMsg);
 			this.msgList.add(pairPongMsg);
 			this.nextExpMsg = MaxCulMsgType.ACK;
+//		} else if (lastMsg instanceof AckMsg && this.msgList.size() == 3) {
+//			BaseMsg wakeupMsg = new WakeupMsg(lastMsg.msgCount, (byte) 0x00, (byte) 0x00, MaxCulBinding.MAXCUL_ADDRESS, lastMsg.srcAddrStr);
+//			this.sender.send(wakeupMsg);
+//			this.msgList.add(wakeupMsg);
+//			this.nextExpMsg = MaxCulMsgType.ACK;
 		} else if (lastMsg instanceof AckMsg && this.msgList.size() == 3) {
-			BaseMsg wakeupMsg = new WakeupMsg(lastMsg.msgCount, (byte) 0x00, (byte) 0x00, MaxCulBinding.MAXCUL_ADDRESS, lastMsg.srcAddrStr);
-			this.sender.send(wakeupMsg);
-			this.msgList.add(wakeupMsg);
-			this.nextExpMsg = MaxCulMsgType.ACK;
-		} else if (lastMsg instanceof AckMsg && this.msgList.size() == 5) {
 			super.notifyForFinish();
 		}
 	}
 
 	@Override
 	public void run() {
+		LOG.info("starting pairing sequence");
 		// initiated by device, cannot wait
+		while (this.msgList.size() < 3) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) { }
+			// waiting
+			
+			if (this.timedOut()) {
+				break;
+			}
+		}
+		
+		LOG.info("pairing sequence ended");
 	}
 
 }

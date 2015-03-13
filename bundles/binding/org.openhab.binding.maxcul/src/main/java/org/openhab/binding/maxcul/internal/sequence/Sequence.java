@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.openhab.binding.maxcul.internal.MaxCulBinding;
 import org.openhab.binding.maxcul.internal.MaxCulSender;
 import org.openhab.binding.maxcul.internal.message.BaseMsg;
 import org.openhab.binding.maxcul.internal.message.MaxCulMsgType;
@@ -107,6 +108,13 @@ public abstract class Sequence implements Runnable {
 				notifyForTimeout();
 			}
 		}, new Date(lastMsg.getTime() + 10000));
+	}
+	
+	protected boolean timedOut() {
+		if (new Date().getTime() - this.lastMsg.getTime() > MaxCulBinding.MSG_TIMEOUT) {
+			return true;
+		}
+		return false;
 	}
 
 	@Override

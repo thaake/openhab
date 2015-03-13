@@ -36,16 +36,31 @@ public class ServerInitiatedSequence extends Sequence {
 
 	@Override
 	public void run() {
+		LOG.info("starting server initiated sequence");
+		
 		BaseMsg lastMsg = this.msgList.get(this.msgList.size() - 1);
 		if (lastMsg.srcAddrStr.equals(MaxCulBinding.MAXCUL_ADDRESS)) {
 			// must be send first
 			this.sender.send(lastMsg);
 			this.nextExpMsg = MaxCulMsgType.ACK;
 		} else {
-			if (lastMsg instanceof AckMsg) {
-				super.notifyForFinish();
+			while (true) {
+				if (lastMsg instanceof AckMsg) {
+					super.notifyForFinish();
+				}
+				
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) { }
+				// waiting
+				
+				if (this.timedOut()) {
+					break;
+				}
 			}
 		}
+		
+		LOG.info("server initiated sequence ended");
 	}
 
 }
