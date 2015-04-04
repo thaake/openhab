@@ -1,0 +1,31 @@
+Manifest-Version: 1.0
+Private-Package: org.openhab.binding.speech.internal
+Ignore-Package: org.openhab.binding.speech.internal
+Bundle-License: http://www.eclipse.org/legal/epl-v10.html
+Bundle-Name: openHAB Speech Binding
+Bundle-SymbolicName: org.openhab.binding.speech
+Bundle-Vendor: openHAB.org
+Bundle-Version: 1.7.0
+Bundle-Activator: org.openhab.binding.speech.internal.SpeechActivator
+Bundle-ManifestVersion: 2
+Bundle-Description: This is the speech binding of the open Home Aut
+ omation Bus (openHAB)
+Import-Package: org.apache.commons.lang,
+ org.apache.commons.lang.math;version="2.6.0",
+ org.openhab.core.binding,
+ org.openhab.core.events,
+ org.openhab.core.items,
+ org.openhab.core.library.items,
+ org.openhab.core.library.types,
+ org.openhab.core.transform,
+ org.openhab.core.types,
+ org.openhab.model.item.binding,
+ org.osgi.framework,
+ org.osgi.service.cm,
+ org.osgi.service.component,
+ org.osgi.service.event,
+ org.slf4j
+Bundle-DocURL: http://www.openhab.org
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Service-Component: OSGI-INF/speechbindingprovider.xml, OSGI-INF/speechbinding.xml
+Bundle-ClassPath: .
