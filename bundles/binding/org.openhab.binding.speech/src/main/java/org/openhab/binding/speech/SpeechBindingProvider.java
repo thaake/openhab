@@ -24,7 +24,10 @@ public interface SpeechBindingProvider extends BindingProvider {
 	boolean isItemConfigured(String itemName);
 	
 	SpeechItemConfig getItemConfig(String itemName);
+	
 	List<SpeechCommandItemConfig> getAllItemCommandConfigs();
+	
+	List<SpeechCommandItemConfig> getAllItemCommandConfigsForGroups(SpeechCommandItemConfig function, SpeechCommandItemConfig place);
 
 	List<SpeechCommandItemConfig> getItemConfigs(List<Item> itemList);
 

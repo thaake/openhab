@@ -10,14 +10,11 @@ package org.openhab.binding.speech.internal;
 
 import java.util.ArrayList;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.openhab.binding.speech.SpeechBindingProvider;
 
 import org.openhab.core.binding.AbstractActiveBinding;
-import org.openhab.core.items.GroupItem;
 import org.openhab.core.items.Item;
 import org.openhab.core.items.ItemNotFoundException;
 import org.openhab.core.items.ItemRegistry;
@@ -64,18 +61,18 @@ public class SpeechBinding extends AbstractActiveBinding<SpeechBindingProvider>
 
 	public void activate() {
 		transformationService = TransformationHelper.getTransformationService(SpeechActivator.getContext(), "MAP");
-//		System.out.println("bla");
-//		new Thread() {
-//			public void run() {
-//				try {
-//					Thread.sleep(10000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				internalReceiveCommand("VoiceCommand", new StringType("Im Wohnzimmer die Heizungen einschalten"));
-//			}
-//		}.start();
+		System.out.println("bla");
+		new Thread() {
+			public void run() {
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				internalReceiveCommand("VoiceCommand", new StringType("Licht im Schlafzimmer einschalten"));
+			}
+		}.start();
 	}
 
 	public void deactivate() {
@@ -227,66 +224,41 @@ public class SpeechBinding extends AbstractActiveBinding<SpeechBindingProvider>
 
 	public List<String> handleSpeechForGroups(SpeechBindingProvider provider, String voice) {
 		logger.debug("looking in groups...");
-		List<SpeechCommandItemConfig> groupConfigs = new ArrayList<SpeechCommandItemConfig>();
+		List<SpeechCommandItemConfig> functionGroupConfigs = new ArrayList<SpeechCommandItemConfig>();
+		List<SpeechCommandItemConfig> placeGroupConfigs = new ArrayList<SpeechCommandItemConfig>();
 		for (SpeechCommandItemConfig speechItemConfig : provider.getAllItemCommandConfigs()) {
 			if (matches(voice, speechItemConfig)) {
 				if (speechItemConfig.isGroup()) {
-					groupConfigs.add(speechItemConfig);
+					if (speechItemConfig.getType() == Type.FUNCTION) {
+						functionGroupConfigs.add(speechItemConfig);
+						logger.debug("found function item: {}", speechItemConfig.getItem().getName());
+					} else if (speechItemConfig.getType() == Type.PLACE) {
+						placeGroupConfigs.add(speechItemConfig);
+						logger.debug("found place item: {}", speechItemConfig.getItem().getName());
+					}
 				}
 			}
 		}
 		
-		if (groupConfigs.size() == 0) {
+		if (functionGroupConfigs.size() == 0) {
+			logger.debug("cannot found a function group");
 			return null;
 		}
 		
-		boolean foundFunction = false;
-		for (SpeechCommandItemConfig c : groupConfigs) {
-			if (c.getType() == Type.FUNCTION) {
-				foundFunction = true;
-			}
-		}
-		if (!foundFunction) {
-			logger.debug("cannot found a function group, just rooms");
+		if (placeGroupConfigs.size() == 0) {
+			logger.debug("cannot found a place group");
 			return null;
 		}
 		
-		Map<SpeechCommandItemConfig, Integer> cache = new HashMap<SpeechCommandItemConfig, Integer>();
-		for (SpeechCommandItemConfig speechItemConfig : groupConfigs) {
-			List<Item> members = null;
-			try {
-				members = ((GroupItem) itemRegistry.getItem(speechItemConfig.getItem().getName())).getMembers();
-			} catch (ItemNotFoundException e) {
-				logger.error("cannot find item in registry: {}", speechItemConfig.getItem().getName());
-				return null;
-			}
-			List<SpeechCommandItemConfig> itemsInGroup = provider.getItemConfigs(members);
-			logger.trace("members for group '{}': {}", speechItemConfig, members.size());
-			logger.trace("found item-configs for members in group '{}': {}", speechItemConfig, itemsInGroup.size());
-			for (SpeechCommandItemConfig c : itemsInGroup) {
-				if (cache.containsKey(c)) {
-					cache.put(c, cache.get(c) + 1);
-				} else {
-					cache.put(c, 1);
-				}
-			}
-		}
-		
-		if (cache.size() == 0) {
-			return null;
-		}
-		
-		List<SpeechCommandItemConfig> finalGroupItems = new ArrayList<SpeechCommandItemConfig>();
-		for (SpeechCommandItemConfig c : cache.keySet()) {
-			if (cache.get(c) == groupConfigs.size()) {
-				finalGroupItems.add(c);
-			} else {
-				//logger.trace("item '{}' was not in all groups, remove", c);	
+		List<SpeechCommandItemConfig> deviceConfig = new ArrayList<SpeechCommandItemConfig>();
+		for (SpeechCommandItemConfig functionConfig : functionGroupConfigs) {
+			for (SpeechCommandItemConfig placeConfig : placeGroupConfigs) {
+				deviceConfig.addAll(provider.getAllItemCommandConfigsForGroups(functionConfig, placeConfig));		
 			}
 		}
 		
 		List<String> switchedItems = new ArrayList<String>();
-		for (SpeechCommandItemConfig config : finalGroupItems) {
+		for (SpeechCommandItemConfig config : deviceConfig) {
 			String foundCommand = findCommandInMap(voice);
 			if (foundCommand != null) {
 				changeDevice(config.getItem(), foundCommand);

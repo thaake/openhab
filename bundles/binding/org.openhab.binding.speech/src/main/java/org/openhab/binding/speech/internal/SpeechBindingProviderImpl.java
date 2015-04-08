@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 import org.openhab.binding.speech.SpeechBindingProvider;
 import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
+import org.openhab.core.items.ItemNotFoundException;
+import org.openhab.core.items.ItemRegistry;
 import org.openhab.model.item.binding.AbstractGenericBindingProvider;
 import org.openhab.model.item.binding.BindingConfigParseException;
 import org.slf4j.Logger;
@@ -40,11 +42,21 @@ public class SpeechBindingProviderImpl extends AbstractGenericBindingProvider im
 	private static final String REGEX_COMMANDS = "command:'([^']*)'";
 	private static final String REGEX_TYPE = "type:'([^']*)'";
 	
+	private ItemRegistry itemRegistry;
+	
 	/**
 	 * {@inheritDoc}
 	 */
 	public String getBindingType() {
 		return "speech";
+	}
+	
+	public void setItemRegistry(ItemRegistry itemRegistry) {
+		this.itemRegistry = itemRegistry;
+	}
+
+	public void unsetItemRegistry(ItemRegistry itemRegistry) {
+		this.itemRegistry = null;
 	}
 
 	/**
@@ -151,6 +163,33 @@ public class SpeechBindingProviderImpl extends AbstractGenericBindingProvider im
 				list.add((SpeechCommandItemConfig) c);
 			}
 		}
+		return list;
+	}
+
+	@Override
+	public List<SpeechCommandItemConfig> getAllItemCommandConfigsForGroups(
+			SpeechCommandItemConfig function, SpeechCommandItemConfig place) {
+		List<SpeechCommandItemConfig> list = new ArrayList<SpeechCommandItemConfig>();
+		
+		for (SpeechCommandItemConfig deviceConfig : this.getAllItemCommandConfigs()) {
+			if (deviceConfig.getType() != Type.DEVICE) {
+				continue;
+			}
+			logger.trace("checking device: {}", deviceConfig.getItem().getName());
+			try {
+				List<String> groups = itemRegistry.getItem(deviceConfig.getItem().getName()).getGroupNames();
+				logger.debug("found groups '{}' for item: {}", groups, deviceConfig.getItem().getName());
+				if (groups.contains(function.getItem().getName())
+						&& groups.contains(place.getItem().getName())) {
+					logger.debug("item {} is in requested groups", deviceConfig.getItem().getName());
+					list.add(deviceConfig);
+				}
+			} catch (ItemNotFoundException e) {
+				logger.error("cannot find item in registry: {}", deviceConfig.getItem().getName());
+				continue;
+			}
+		}
+		
 		return list;
 	}
 }
