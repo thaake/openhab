@@ -175,10 +175,9 @@ public class SpeechBindingProviderImpl extends AbstractGenericBindingProvider im
 			if (deviceConfig.getType() != Type.DEVICE) {
 				continue;
 			}
-			logger.trace("checking device: {}", deviceConfig.getItem().getName());
 			try {
 				List<String> groups = itemRegistry.getItem(deviceConfig.getItem().getName()).getGroupNames();
-				logger.debug("found groups '{}' for item: {}", groups, deviceConfig.getItem().getName());
+				logger.trace("found groups '{}' for item: {}", groups, deviceConfig.getItem().getName());
 				if (groups.contains(function.getItem().getName())
 						&& groups.contains(place.getItem().getName())) {
 					logger.debug("item {} is in requested groups", deviceConfig.getItem().getName());

@@ -61,18 +61,18 @@ public class SpeechBinding extends AbstractActiveBinding<SpeechBindingProvider>
 
 	public void activate() {
 		transformationService = TransformationHelper.getTransformationService(SpeechActivator.getContext(), "MAP");
-		System.out.println("bla");
-		new Thread() {
-			public void run() {
-				try {
-					Thread.sleep(10000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				internalReceiveCommand("VoiceCommand", new StringType("Licht im Schlafzimmer einschalten"));
-			}
-		}.start();
+//		System.out.println("bla");
+//		new Thread() {
+//			public void run() {
+//				try {
+//					Thread.sleep(10000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				internalReceiveCommand("VoiceCommand", new StringType("Licht im Schlafzimmer einschalten"));
+//			}
+//		}.start();
 	}
 
 	public void deactivate() {
@@ -180,14 +180,10 @@ public class SpeechBinding extends AbstractActiveBinding<SpeechBindingProvider>
 	private List<String> handleSpeechForItems(SpeechBindingProvider provider, String voice) {
 		logger.debug("looking in items...");
 		List<SpeechCommandItemConfig> itemConfigs = new ArrayList<SpeechCommandItemConfig>();
-		boolean someHasCommands = false;
 		for (SpeechCommandItemConfig speechItemConfig : provider.getAllItemCommandConfigs()) {
 			if (matches(voice, speechItemConfig)
 					&& speechItemConfig.getType() == Type.DEVICE) {
 				itemConfigs.add(speechItemConfig);
-				if (speechItemConfig.getCommands().size() > 0) {
-					someHasCommands = true;
-				}
 			}
 		}
 		
@@ -196,30 +192,22 @@ public class SpeechBinding extends AbstractActiveBinding<SpeechBindingProvider>
 			return null;
 		}
 		
-		if (someHasCommands) {
-			List<String> switchedItems = new ArrayList<String>();
-			for (SpeechCommandItemConfig config : itemConfigs) {
+		List<String> switchedItems = new ArrayList<String>();
+		for (SpeechCommandItemConfig config : itemConfigs) {
+			String foundCommand = this.findCommand(voice, config);
+			if (foundCommand == null) {
 				if (config.getCommands().size() > 0) {
-					// handle all with commands
-					String foundCommand = this.findCommand(voice, config);
-					if (foundCommand != null) {
-						changeDevice(config.getItem(), foundCommand);
-						switchedItems.add(config.getPrimaryName() + "#" + foundCommand);
-					}
+					logger.debug("command is set, but does not match, do not change this device: {}", config.getItem().getName());
+					continue;
 				}
+				foundCommand = findCommandInMap(voice);	
 			}
-			return switchedItems;
-		} else {
-			List<String> switchedItems = new ArrayList<String>();
-			for (SpeechCommandItemConfig config : itemConfigs) {
-				String foundCommand = findCommandInMap(voice);
-				if (foundCommand != null) {
-					changeDevice(config.getItem(), foundCommand);
-					switchedItems.add(config.getPrimaryName() + "#" + foundCommand);
-				}
+			if (foundCommand != null) {
+				changeDevice(config.getItem(), foundCommand);
+				switchedItems.add(config.getPrimaryName() + "#" + foundCommand);
 			}
-			return switchedItems;
 		}
+		return switchedItems;
 	}
 
 	public List<String> handleSpeechForGroups(SpeechBindingProvider provider, String voice) {
@@ -259,7 +247,15 @@ public class SpeechBinding extends AbstractActiveBinding<SpeechBindingProvider>
 		
 		List<String> switchedItems = new ArrayList<String>();
 		for (SpeechCommandItemConfig config : deviceConfig) {
-			String foundCommand = findCommandInMap(voice);
+			String foundCommand = this.findCommand(voice, config);
+			if (foundCommand == null) {
+				if (config.getCommands().size() > 0) {
+					logger.debug("command is set, but does not match, do not change this device: {}", config.getItem().getName());
+					continue;
+				}
+				foundCommand = findCommandInMap(voice);	
+			}
+			
 			if (foundCommand != null) {
 				changeDevice(config.getItem(), foundCommand);
 				switchedItems.add(config.getPrimaryName() + "#" + foundCommand);
