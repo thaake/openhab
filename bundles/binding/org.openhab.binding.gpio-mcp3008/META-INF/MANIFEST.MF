@@ -10,7 +10,8 @@ Bundle-Activator: org.openhab.binding.gpio_mcp3008.internal.MCP3008Activator
 Bundle-ManifestVersion: 2
 Bundle-Description: This is the GPIO-MCP3008 binding of the open Home Aut
  omation Bus (openHAB)
-Import-Package: org.apache.commons.lang,
+Import-Package: org.apache.commons.io;version="2.0.1",
+ org.apache.commons.lang,
  org.apache.commons.lang.math;version="2.6.0",
  org.openhab.core.binding,
  org.openhab.core.events,

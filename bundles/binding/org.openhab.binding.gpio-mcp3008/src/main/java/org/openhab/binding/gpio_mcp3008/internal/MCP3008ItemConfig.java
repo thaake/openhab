@@ -1,5 +1,6 @@
 package org.openhab.binding.gpio_mcp3008.internal;
 
+import org.openhab.core.items.Item;
 import org.openhab.io.gpio_raspberry.item.GpioSPIItemConfig;
 
 public class MCP3008ItemConfig extends GpioSPIItemConfig {
@@ -7,17 +8,15 @@ public class MCP3008ItemConfig extends GpioSPIItemConfig {
 	private double offset;
 	private long meterings;
 	private byte port;
+	private int refresh;
 
-	public MCP3008ItemConfig() {
-		super();
-	}
-
-	public MCP3008ItemConfig(byte port, double factor, double offset, long meterings) {
-		super();
+	public MCP3008ItemConfig(Item item, byte port, double factor, double offset, long meterings, int refresh) {
+		super(item);
 		this.factor = factor;
 		this.offset = offset;
 		this.meterings = meterings;
 		this.port = port;
+		this.refresh = refresh;
 	}
 
 	public double getFactor() {
@@ -50,6 +49,14 @@ public class MCP3008ItemConfig extends GpioSPIItemConfig {
 
 	public void setPort(byte port) {
 		this.port = port;
+	}
+
+	public int getRefresh() {
+		return refresh;
+	}
+
+	public void setRefresh(int refresh) {
+		this.refresh = refresh;
 	}
 	
 	

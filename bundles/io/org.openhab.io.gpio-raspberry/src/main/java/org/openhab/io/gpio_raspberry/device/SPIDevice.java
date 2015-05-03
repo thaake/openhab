@@ -11,7 +11,6 @@ import com.pi4j.io.gpio.GpioPinDigitalInput;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
 import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
-import com.pi4j.jni.I2C;
 
 
 public abstract class SPIDevice<DC extends SPIConfig, IC extends GpioSPIItemConfig> extends Device<DC, IC> {
@@ -72,7 +71,7 @@ public abstract class SPIDevice<DC extends SPIConfig, IC extends GpioSPIItemConf
 	}
 	
 	public boolean isMiso() {
-		return this.pinMosi.isHigh();
+		return this.pinMiso.isHigh();
 	}
 
 	protected boolean open() {

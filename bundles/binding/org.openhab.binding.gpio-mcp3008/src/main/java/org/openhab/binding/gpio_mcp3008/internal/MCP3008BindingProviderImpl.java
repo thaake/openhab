@@ -27,6 +27,12 @@ import org.slf4j.LoggerFactory;
 public class MCP3008BindingProviderImpl extends AbstractGenericBindingProvider implements MCP3008BindingProvider {
 	private static final Logger logger = LoggerFactory.getLogger(MCP3008BindingProviderImpl.class);
 	
+	private static final String PROP_FACTOR = "factor";
+	private static final String PROP_OFFSET = "offset";
+	private static final String PROP_METERINGS = "meterings";
+	private static final String PROP_PORT = "port";
+	private static final String PROP_REFRESH = "refresh";
+	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -53,12 +59,41 @@ public class MCP3008BindingProviderImpl extends AbstractGenericBindingProvider i
 	public void processBindingConfiguration(String context, Item item, String bindingConfig) throws BindingConfigParseException {
 		super.processBindingConfiguration(context, item, bindingConfig);
 		
-//		if (bindingConfig == null) {
-//			logger.debug("binding-configuration is currently not set for item: " + item.getName());
-//		}
-		
 		logger.debug("reading item: " + item);
-		super.bindingConfigs.put(item.getName(), new MCP3008ItemConfig());
+		
+		double factor = 1;
+		double offset = 0;
+		long meterings = 1;
+		Byte port = null;
+		int refresh = 1000;
+		
+		String[] configParts = bindingConfig.split(" ");
+		for (String configPart : configParts) {
+			String[] configPartSplit = configPart.split(":");
+			if (configPartSplit[0].equals(PROP_FACTOR)) {
+				factor = Double.parseDouble(configPartSplit[1]);
+			} else if (configPartSplit[0].equals(PROP_OFFSET)) {
+				offset = Double.parseDouble(configPartSplit[1]);
+			} else if (configPartSplit[0].equals(PROP_METERINGS)) {
+				meterings = Long.parseLong(configPartSplit[1]);
+			} else if (configPartSplit[0].equals(PROP_PORT)) {
+				port = Byte.parseByte(configPartSplit[1]);
+			} else if (configPartSplit[0].equals(PROP_REFRESH)) {
+				refresh = Integer.parseInt(configPartSplit[1]);
+			}
+		}
+		
+		logger.debug("factor: " + factor);
+		logger.debug("offset: " + offset);
+		logger.debug("meterings: " + meterings);
+		logger.debug("port: " + port);
+		
+		if (port == null) {
+			logger.error("port is not configured, but required");
+			return;
+		}
+		
+		super.bindingConfigs.put(item.getName(), new MCP3008ItemConfig(item, port, factor, offset, meterings, refresh));
 	}
 	
 	@Override

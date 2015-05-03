@@ -13,6 +13,7 @@ import java.util.Dictionary;
 import org.openhab.binding.gpio_mcp3008.MCP3008BindingProvider;
 
 import org.openhab.core.binding.AbstractActiveBinding;
+import org.openhab.core.binding.BindingProvider;
 import org.openhab.core.items.Item;
 import org.openhab.core.items.ItemNotFoundException;
 import org.openhab.core.items.ItemRegistry;
@@ -43,6 +44,7 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 	private GpioLoader gpioLoader;
 	private ItemRegistry itemRegistry;
 	
+	private MCP3008Config config;
 	private MCP3008Device device;
 
 	
@@ -74,7 +76,17 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 		// should be reset when activating this binding again
 	}
 
-	
+	@Override
+	public void bindingChanged(BindingProvider provider, String itemName) {
+		super.bindingChanged(provider, itemName);
+		
+		try {
+			this.device = (MCP3008Device) this.gpioLoader.createSPIDevice(this.config, MCP3008Device.class);
+		} catch (GpioException e) {
+			logger.error(e.getMessage());
+		}
+	}
+
 	/**
 	 * @{inheritDoc}
 	 */
@@ -120,14 +132,14 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 	@Override
 	public void updated(Dictionary<String, ?> properties)
 			throws ConfigurationException {
-		if (properties == null) {
-			logger.warn("no configuration found");
-		} else {
+//		if (properties == null) {
+//			logger.warn("no configuration found");
+//		} else {
 			String id = this.getName();
 			
 			logger.debug("id: " + id);
 			
-			MCP3008Config config = new MCP3008Config(id);
+			this.config = new MCP3008Config(id);
 			
 			try {
 				this.device = (MCP3008Device) this.gpioLoader.createSPIDevice(config, MCP3008Device.class);
@@ -136,7 +148,7 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 			}
 			
 			setProperlyConfigured(true);
-		}
+//		}
 	}
 
 
@@ -144,12 +156,25 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 	protected void execute() {
 		if (providers.size() == 0) {
 			logger.debug("no providers are set");
+			return;
+		}
+		if (device == null) {
+			logger.error("device not initialized");
+			return;
 		}
 		for (MCP3008BindingProvider provider : providers) {
-			if (provider.getItemNames().size() == 0) {
-				logger.debug("no items are set");
+			for (String itemName : provider.getItemNames()) {
+				MCP3008ItemConfig itemConfig = provider.getItemConfig(itemName);
+				
+				try {
+					State state = this.device.communicate(null, itemConfig, null);
+					if (state != null) {
+						eventPublisher.postUpdate(itemName, state);
+					}
+				} catch (Throwable e) {
+					logger.error("error reading data", e);
+				}
 			}
-			
 		}
 	}
 

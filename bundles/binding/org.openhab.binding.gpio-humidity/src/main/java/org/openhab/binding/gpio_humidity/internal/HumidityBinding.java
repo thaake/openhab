@@ -143,13 +143,17 @@ public class HumidityBinding extends AbstractActiveBinding<HumidityBindingProvid
 					logger.error("cannot find item: " + itemName);
 					return;
 				}
-				State state = device.communicate(null, itemConfig, item.getState());
-				if (state == null) {
-					logger.debug("no state returned, do not publish");
-					continue;
+				try {
+					State state = device.communicate(null, itemConfig, item.getState());
+					if (state == null) {
+						logger.debug("no state returned, do not publish");
+						continue;
+					}
+					
+					super.eventPublisher.postUpdate(itemName, state);
+				} catch (Throwable e) {
+					logger.error("error reading data", e);
 				}
-				
-				super.eventPublisher.postUpdate(itemName, state);
 			}
 		}
 	}
