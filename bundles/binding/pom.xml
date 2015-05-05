@@ -137,11 +137,20 @@
     <module>org.openhab.binding.enigma2</module>
     <module>org.openhab.binding.enigma2.test</module>
     <module>org.openhab.binding.bticino</module>
+    <module>org.openhab.binding.ebus</module>
     <module>org.openhab.binding.zibase</module>
     <module>org.openhab.binding.wago</module>
     <module>org.openhab.binding.networkupstools</module>
+<<<<<<< HEAD
 	<module>org.openhab.binding.ecobee</module>	<module>org.openhab.binding.caldav</module>
 	<module>org.openhab.binding.caldav-presence</module>
+=======
+    <module>org.openhab.binding.ecobee</module>
+    <module>org.openhab.binding.nest</module>
+    <module>org.openhab.binding.satel</module>
+    <module>org.openhab.binding.harmonyhub</module>
+    <module>org.openhab.binding.plex</module>
+>>>>>>> upstream/master
   </modules>
 
 </project>
