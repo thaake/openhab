@@ -136,15 +136,24 @@
     <module>org.openhab.binding.enigma2</module>
     <module>org.openhab.binding.enigma2.test</module>
     <module>org.openhab.binding.bticino</module>
+    <module>org.openhab.binding.ebus</module>
     <module>org.openhab.binding.zibase</module>
     <module>org.openhab.binding.wago</module>
     <module>org.openhab.binding.networkupstools</module>
+<<<<<<< HEAD
 	<module>org.openhab.binding.ecobee</module>
 	<module>org.openhab.binding.gpio-pcf8591</module>
 	<module>org.openhab.binding.gpio-switch</module>
 	<module>org.openhab.binding.gpio-humidity</module>
 	<module>org.openhab.binding.gpio-humidity.test</module>
 	<module>org.openhab.binding.gpio-mcp3008</module>
+=======
+    <module>org.openhab.binding.ecobee</module>
+    <module>org.openhab.binding.nest</module>
+    <module>org.openhab.binding.satel</module>
+    <module>org.openhab.binding.harmonyhub</module>
+    <module>org.openhab.binding.plex</module>
+>>>>>>> 2e582d3420feb01ce0f1300973c3585b3e2a9ed7
   </modules>
 
 </project>
