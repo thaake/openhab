@@ -75,7 +75,6 @@ public class MCP23017Binding extends AbstractActiveBinding<MCP23017BindingProvid
 		this.device.stopPolling();
 	}
 
-	
 	/**
 	 * @{inheritDoc}
 	 */
@@ -106,24 +105,11 @@ public class MCP23017Binding extends AbstractActiveBinding<MCP23017BindingProvid
 		}
 	}
 	
-	/**
-	 * @{inheritDoc}
-	 */
-	@Override
-	protected void internalReceiveUpdate(String itemName, State newState) {
-		// the code being executed when a state was sent on the openHAB
-		// event bus goes here. This method is only called if one of the 
-		// BindingProviders provide a binding for the given 'itemName'.
-		logger.debug("internalReceiveCommand() is called!");
-	}
-
-
 	@Override
 	public void updated(Dictionary<String, ?> properties)
 			throws ConfigurationException {
-		if (properties == null) {
-			logger.warn("no configuration found");
-		} else {
+		if (properties != null) {
+			logger.info("loading configuration");
 			byte address = Byte.parseByte((String) properties.get(PROP_ADDRESS), 16);
 			String id = this.getName();
 			

@@ -165,6 +165,9 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 		for (MCP3008BindingProvider provider : providers) {
 			for (String itemName : provider.getItemNames()) {
 				MCP3008ItemConfig itemConfig = provider.getItemConfig(itemName);
+				if (System.currentTimeMillis() - itemConfig.lastRefresh < itemConfig.getRefresh()) {
+					continue;
+				}
 				
 				try {
 					State state = this.device.communicate(null, itemConfig, null);
@@ -174,6 +177,8 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 				} catch (Throwable e) {
 					logger.error("error reading data", e);
 				}
+				
+				itemConfig.lastRefresh = System.currentTimeMillis();
 			}
 		}
 	}

@@ -1,22 +1,21 @@
 package org.openhab.binding.gpio_mcp23017.internal;
 
+import org.openhab.core.items.Item;
 import org.openhab.io.gpio_raspberry.item.GpioI2CItemConfig;
 
 public class MCP23017ItemConfig extends GpioI2CItemConfig {
 	private byte port;
 	private char bank;
-	private String itemName;
 	private boolean in;
 
 	public MCP23017ItemConfig() {
 		super();
 	}
 	
-	public MCP23017ItemConfig(byte port, char bank, String itemName, boolean in) {
-		super();
+	public MCP23017ItemConfig(Item item, byte port, char bank, boolean in) {
+		super(item);
 		this.port = port;
 		this.bank = bank;
-		this.itemName = itemName;
 		this.in = in;
 	}
 
@@ -34,14 +33,6 @@ public class MCP23017ItemConfig extends GpioI2CItemConfig {
 
 	public void setBank(char bank) {
 		this.bank = bank;
-	}
-
-	public String getItemName() {
-		return itemName;
-	}
-
-	public void setItemName(String itemName) {
-		this.itemName = itemName;
 	}
 
 	public boolean isIn() {

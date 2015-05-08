@@ -24,7 +24,7 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 	private static final int SINUS_CURVES = 2;
 	private static final int NANOS_PER_SINUS = 20 * 1000 * 1000;
 	private static final int MEASURE_POINTS_PER_SINUS = 120;
-	private static final int PART_OF_CURVE_FOR_PEAK_DETECTION = 20;
+	private static final int PART_OF_CURVE_FOR_PEAK_DETECTION = 13;
 	private static final int DIVERSIFICATION_POINTS = MEASURE_POINTS_PER_SINUS
 			/ PART_OF_CURVE_FOR_PEAK_DETECTION;
 
@@ -49,12 +49,15 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 			}
 			measures.get(rasteredTimeOnSinus).add(measured);
 		}
-		Map<Long, Integer> measuresNormalized = new HashMap<Long, Integer>();
+		Map<Long, Float> measuresNormalized = new HashMap<Long, Float>();
+		float averageOverAll = 0;
 		for (Long time : measures.keySet()) {
 			List<Integer> measurePointList = measures.get(time);
-			int average = average(measurePointList);
+			float average = average(measurePointList);
+			averageOverAll += average;
 			measuresNormalized.put(time, average);
 		}
+		averageOverAll = averageOverAll / measuresNormalized.size();
 
 		LOG.trace("measurePoints: " + measures.size());
 		List<Long> times = new ArrayList<Long>(measuresNormalized.keySet());
@@ -69,22 +72,9 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 			sb.append(time + ";" + measuresNormalized.get(time)).append(
 					System.lineSeparator());
 		}
-		// try {
-		// File path = new File("etc" + File.pathSeparatorChar + "mcp3008");
-		// path.mkdirs();
-		// File file = new File(path, "measures-" + System.currentTimeMillis() +
-		// ".txt");
-		// file.createNewFile();
-		// FileOutputStream fis = new FileOutputStream(file);
-		// IOUtils.write(sb.toString(), fis);
-		// } catch (FileNotFoundException e) {
-		// LOG.error("error writing measure points", e);
-		// } catch (IOException e) {
-		// LOG.error("error writing measure points", e);
-		// }
 		LOG.trace(sb.toString());
 
-		int peakSpan = findPeaks(times, measuresNormalized);
+		float peakSpan = findPeaks(times, measuresNormalized, averageOverAll);
 
 		LOG.debug("measuring done, calculating with factor: "
 				+ itemConfig.getFactor());
@@ -104,33 +94,27 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 		}
 	}
 
-	private static int findPeaks(List<Long> times,
-			Map<Long, Integer> measuresNormalized) {
-		int smallestDiversificationHigh = Integer.MAX_VALUE;
-		int smallestDiversificationLow = Integer.MAX_VALUE;
-		int highPeak = Integer.MIN_VALUE;
-		int lowPeak = Integer.MAX_VALUE;
+	private static float findPeaks(List<Long> times,
+			Map<Long, Float> measuresNormalized,
+			float averageOverAll) {
+		float smallestDiversificationHigh = Integer.MAX_VALUE;
+		float smallestDiversificationLow = Integer.MAX_VALUE;
+		float highPeak = (int) averageOverAll;
+		float lowPeak = (int) averageOverAll;
+		
+		// find one peak and calc average
 		for (int i = 0; i < times.size() - DIVERSIFICATION_POINTS; i++) {
 			DiversivicationWithValue divValue = calculateDiversification(i,
 					times, measuresNormalized);
-			if (smallestDiversificationHigh == Integer.MAX_VALUE) {
-				smallestDiversificationHigh = divValue.diversification;
-				highPeak = divValue.value;
-				LOG.trace("setting high to initial: {}", divValue);
-			}
-			if (smallestDiversificationLow == Integer.MAX_VALUE) {
-				smallestDiversificationLow = divValue.diversification;
-				lowPeak = divValue.value;
-				LOG.trace("setting low to initial: {}", divValue);
-			}
-			if (divValue.diversification < smallestDiversificationHigh
-					&& divValue.value > lowPeak) {
+			
+			if (divValue.diversification <= smallestDiversificationHigh
+					&& divValue.value > averageOverAll) {
 				smallestDiversificationHigh = divValue.diversification;
 				highPeak = divValue.value;	
 				LOG.trace("found lower diversification for high: {}", divValue);
 			}
-			if (divValue.diversification < smallestDiversificationLow 
-					&& divValue.value < highPeak) {
+			if (divValue.diversification <= smallestDiversificationLow 
+					&& divValue.value < averageOverAll) {
 				smallestDiversificationLow = divValue.diversification;
 				lowPeak = divValue.value;
 				LOG.trace("found lower diversification for low: {}", divValue);
@@ -141,29 +125,29 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 	}
 
 	private static DiversivicationWithValue calculateDiversification(int start,
-			List<Long> times, Map<Long, Integer> measuresNormalized) {
-		int min = Integer.MAX_VALUE;
-		int max = Integer.MIN_VALUE;
-		int sum = 0;
+			List<Long> times, Map<Long, Float> measuresNormalized) {
+		float min = Integer.MAX_VALUE;
+		float max = Integer.MIN_VALUE;
+		float sum = 0;
 		for (int i = start; i < start + DIVERSIFICATION_POINTS; i++) {
-			Integer value = measuresNormalized.get(times.get(i));
+			Float value = measuresNormalized.get(times.get(i));
 			if (value < min)
 				min = value;
 			if (value > max)
 				max = value;
 			sum += value;
 		}
-		int average = sum / DIVERSIFICATION_POINTS;
-		int diff1 = Math.abs(average - min);
-		int diff2 = Math.abs(average - max);
+		float average = sum / DIVERSIFICATION_POINTS;
+		float diff1 = Math.abs(average - min);
+		float diff2 = Math.abs(average - max);
 		return new DiversivicationWithValue(Math.min(diff1, diff2), average);
 	}
 
 	static class DiversivicationWithValue {
-		int diversification;
-		int value;
+		float diversification;
+		float value;
 
-		public DiversivicationWithValue(int diversification, int value) {
+		public DiversivicationWithValue(float diversification, float value) {
 			super();
 			this.diversification = diversification;
 			this.value = value;
@@ -178,8 +162,8 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 		
 	}
 
-	private static int average(List<Integer> list) {
-		int sum = 0;
+	private static float average(List<Integer> list) {
+		float sum = 0;
 		for (Integer i : list) {
 			sum += i;
 		}

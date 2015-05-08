@@ -85,7 +85,7 @@ public class MCP23017BindingProviderImpl extends AbstractGenericBindingProvider 
 		}
 		
 		logger.debug("reading item: " + item);
-		super.bindingConfigs.put(item.getName(), new MCP23017ItemConfig(port, bank, item.getName(), in));
+		super.bindingConfigs.put(item.getName(), new MCP23017ItemConfig(item, port, bank, in));
 	}
 	
 	@Override

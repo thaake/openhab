@@ -22,11 +22,8 @@
     <module>org.openhab.io.gcal</module>
     <module>org.openhab.io.gcal.test</module>
     <module>org.openhab.io.gpio</module>
-<<<<<<< HEAD
     <module>org.openhab.io.gpio-raspberry</module>
-=======
     <module>org.openhab.io.harmonyhub</module>
->>>>>>> 2e582d3420feb01ce0f1300973c3585b3e2a9ed7
     <module>org.openhab.io.monitor</module>
     <module>org.openhab.io.multimedia</module>
     <module>org.openhab.io.multimedia.tts.freetts</module>

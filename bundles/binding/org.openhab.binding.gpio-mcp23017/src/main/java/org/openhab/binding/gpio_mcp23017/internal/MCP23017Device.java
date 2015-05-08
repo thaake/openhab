@@ -1,7 +1,9 @@
 package org.openhab.binding.gpio_mcp23017.internal;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.openhab.core.events.EventPublisher;
 import org.openhab.core.items.Item;
@@ -18,10 +20,8 @@ import org.slf4j.LoggerFactory;
 public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig> {
 	private static final Logger LOG = LoggerFactory.getLogger(MCP23017Device.class);
 	
-	public static final int MIN_TIME_FOR_NEXT_UPDATE = 1000;
-
-	private ExecutorService executors;
-	private Map<Byte, Runnable> pollingMap;
+	private ExecutorService executors = Executors.newCachedThreadPool();
+	private Map<Byte, Runnable> pollingMap = new HashMap<Byte, Runnable>();
 
 	public MCP23017Device(MCP23017Config config) {
 		super(config);
@@ -39,7 +39,7 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 		PollingThread run = new PollingThread(portMask,
 				itemConfig.getBank(),
 				eventPublisher,
-				itemConfig.getItemName(),
+				itemConfig.getItem().getName(),
 				itemConfig.getItem().getClass());
 		this.pollingMap.put(itemConfig.getPort(), run);
 		this.executors.execute(run);
@@ -226,13 +226,14 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 			this.eventPublisher = eventPublisher;
 			this.itemName = itemName;
 			this.itemType = itemType;
+			LOG.debug("new polling thread created for item: {}", itemName);
 		}
 
 		@Override
 		public void run() {
 			byte registerSwitch = getRegisterSwitch(bank);
 
-			long lastSend = 0;
+			boolean lastState = false;
 
 			while (!isInterrupted()) {
 				MCP23017Device.this.open("/dev/i2c-1");
@@ -246,19 +247,14 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 
 				byte result = (byte) ((read & 0xFF) & portMask);
 				LOG.trace("result: " + Integer.toHexString(result));
-				if (result == portMask) {
-					if (lastSend + MIN_TIME_FOR_NEXT_UPDATE < System
-							.currentTimeMillis()) {
+				boolean newState = result == portMask;
+				if (lastState != newState) {
+					if (newState) {
 						updateItem(eventPublisher, itemName, true, itemType);
-						lastSend = System.currentTimeMillis();
+					} else {
+						updateItem(eventPublisher, itemName, false, itemType);
 					}
-				} else {
-					if (lastSend + MIN_TIME_FOR_NEXT_UPDATE < System
-							.currentTimeMillis()) {
-						updateItem(eventPublisher, itemName, false,
-								itemType);
-						lastSend = System.currentTimeMillis();
-					}
+					lastState = newState;
 				}
 
 				try {
