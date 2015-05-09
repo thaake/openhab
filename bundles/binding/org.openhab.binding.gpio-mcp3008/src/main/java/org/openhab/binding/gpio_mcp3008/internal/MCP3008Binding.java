@@ -86,17 +86,25 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 			logger.error(e.getMessage());
 		}
 	}
+	
+	
+
+	@Override
+	public void allBindingsChanged(BindingProvider provider) {
+		super.allBindingsChanged(provider);
+		
+		try {
+			this.device = (MCP3008Device) this.gpioLoader.createSPIDevice(this.config, MCP3008Device.class);
+		} catch (GpioException e) {
+			logger.error(e.getMessage());
+		}
+	}
 
 	/**
 	 * @{inheritDoc}
 	 */
 	@Override
 	protected void internalReceiveCommand(String itemName, Command command) {
-		// the code being executed when a command was sent on the openHAB
-		// event bus goes here. This method is only called if one of the 
-		// BindingProviders provide a binding for the given 'itemName'.
-		logger.debug("internalReceiveCommand() is called!");
-		
 		for (MCP3008BindingProvider provider : providers) {
 			
 			MCP3008ItemConfig itemConfig = provider.getItemConfig(itemName);
