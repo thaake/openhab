@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 
 import org.openhab.core.library.items.NumberItem;
 import org.openhab.core.library.items.StringItem;
@@ -22,13 +26,10 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 	private static final Logger LOG = LoggerFactory
 			.getLogger(MCP3008Device.class);
 
-	private static final float SINUS_CURVES = 1;
 	private static final float NANOS_PER_SINUS = 20 * 1000 * 1000;
 	private static final float MEASURE_POINTS_PER_SINUS = 100;
-//	private static final int PART_OF_CURVE_FOR_PEAK_DETECTION = 13;
-//	private static final int DIVERSIFICATION_POINTS = MEASURE_POINTS_PER_SINUS
-//			/ PART_OF_CURVE_FOR_PEAK_DETECTION;
 	private static final float AMPLITUDE_STEP_SIZE = 0.2f;
+	private static final int DISTANCE_HYSTERESIS = 60; // in percent
 
 	public MCP3008Device(MCP3008Config config) {
 		super(config);
@@ -42,9 +43,9 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 		for (int i = 0; i < itemConfig.getMeterings(); i++) {
 			long now = System.nanoTime();
 			int measured = this.measure(itemConfig.getPort(), false);
-			long timeOnSinus = (long) ((now - ref) % (NANOS_PER_SINUS * SINUS_CURVES));
+			long timeOnSinus = (long) ((now - ref) % (NANOS_PER_SINUS));
 			long rasteredTimeOnSinus = (long) (timeOnSinus
-					- (timeOnSinus % (NANOS_PER_SINUS / MEASURE_POINTS_PER_SINUS * SINUS_CURVES)));
+					- (timeOnSinus % (NANOS_PER_SINUS / MEASURE_POINTS_PER_SINUS)));
 //			long rasteredTimeOnSinus = now;
 			if (!measures.containsKey(rasteredTimeOnSinus)) {
 				measures.put(rasteredTimeOnSinus, new ArrayList<Integer>());
@@ -114,9 +115,7 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 	private void dumpOptimzedCurve(List<Long> times, float xMovement, float amplitude, float yMovement) {
 		StringBuffer sb = new StringBuffer();
 		for (Long time : times) {
-			float sinusInput = (float) ((time / NANOS_PER_SINUS * SINUS_CURVES) * Math.PI);
-			float sinusOffset = (xMovement / 20000000f);
-			float optimizedValue = (float) (amplitude * Math.sin(sinusInput + sinusOffset) + yMovement);
+			float optimizedValue = getPointOnSinus(time, yMovement, amplitude, xMovement);
 			sb.append(time + ";" + optimizedValue).append(
 					System.lineSeparator());
 		}
@@ -134,28 +133,31 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 
 	private float findBestAmplitude(Map<Long, Float> measuresNormalized,
 			float averageOverAll, float amplHalf, float xMovement) {
-		float bestDistance = this.calcDistance(measuresNormalized, averageOverAll, amplHalf, xMovement);
-		float distanceBelow = this.calcDistance(measuresNormalized, averageOverAll, amplHalf - AMPLITUDE_STEP_SIZE, xMovement);
-		float distanceAbove = this.calcDistance(measuresNormalized, averageOverAll, amplHalf + AMPLITUDE_STEP_SIZE, xMovement);
+		LOG.trace("finding best amplitude");
+		float bestDistance = this.calcDistance(measuresNormalized, averageOverAll, amplHalf, xMovement, true);
+		LOG.trace("start distance: {}", bestDistance);
+		float distanceBelow = this.calcDistance(measuresNormalized, averageOverAll, amplHalf - AMPLITUDE_STEP_SIZE, xMovement, true);
+		float distanceAbove = this.calcDistance(measuresNormalized, averageOverAll, amplHalf + AMPLITUDE_STEP_SIZE, xMovement, true);
 		float bestAmplitude = amplHalf;
 		float currentStepSize = 0;
 		if (distanceBelow < bestDistance) {
-			LOG.trace("best amplitude is below: {}", amplHalf);
+			LOG.trace("best amplitude is below '{}': ", amplHalf, distanceBelow);
 			currentStepSize = -AMPLITUDE_STEP_SIZE;
 		} else if (distanceAbove < bestDistance) {
-			LOG.trace("best amplitude is above: {}", amplHalf);
+			LOG.trace("best amplitude is above '{}': ", amplHalf, distanceAbove);
 			currentStepSize = AMPLITUDE_STEP_SIZE;
 		} else {
 			return bestDistance;
 		}
 			
-		for (float amplitude = amplHalf; ; amplitude += currentStepSize) {
-			float distance = this.calcDistance(measuresNormalized, averageOverAll, amplitude, xMovement);
+		for (float amplitude = amplHalf + currentStepSize; ; amplitude += currentStepSize) {
+			float distance = this.calcDistance(measuresNormalized, averageOverAll, amplitude, xMovement, true);
 			LOG.trace("distance for amplitude ({}): {}", amplitude, distance);
 			if (distance < bestDistance) {
 				bestDistance = distance;
 				bestAmplitude = amplitude;
 			} else {
+				LOG.trace("found best distance once before");
 				break;
 			}
 		}
@@ -168,7 +170,7 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 		float bestDistance = Integer.MAX_VALUE;
 		float bestXMovement = 0;
 		for (float xMovement = 0; xMovement < 2 * Math.PI; xMovement += Math.PI / MEASURE_POINTS_PER_SINUS) {
-			float distance = this.calcDistance(measuresNormalized, yMovement, amplHalf, xMovement);
+			float distance = this.calcDistance(measuresNormalized, yMovement, amplHalf, xMovement, true);
 			LOG.trace("distance for x movement ({}): {}", xMovement, distance);
 			if (distance < bestDistance) {
 				bestDistance = distance;
@@ -178,17 +180,51 @@ public class MCP3008Device extends SPIDevice<MCP3008Config, MCP3008ItemConfig> {
 		return bestXMovement;
 	}
 	
-	private float calcDistance(Map<Long, Float> measuresNormalized,
+	private float getPointOnSinus(long time,
             float yMovement, float amplHalf, float xMovement) {
-		float distanceOverAll = 0;
-			for (Map.Entry<Long, Float> entry : measuresNormalized.entrySet()) {
-			float sinusInput = (float) ((entry.getKey() / NANOS_PER_SINUS * SINUS_CURVES) * Math.PI);
-			float optimizedValue = (float) (amplHalf * Math.sin(sinusInput + xMovement) + yMovement);
+		float sinusInput = (float) ((time / NANOS_PER_SINUS * 2) * Math.PI);
+		float optimizedValue = (float) (amplHalf * Math.sin(sinusInput + xMovement) + yMovement);
+		return optimizedValue;
+	}
+	
+	private float calcDistance(Map<Long, Float> measuresNormalized,
+            float yMovement, float amplHalf, float xMovement, boolean ignoreErrors) {
+		List<Float> distanceList = new ArrayList<Float>();
+		for (Map.Entry<Long, Float> entry : measuresNormalized.entrySet()) {
+			float optimizedValue = getPointOnSinus(entry.getKey(), yMovement, amplHalf, xMovement);
 			float distancePart = Math.abs(100f - optimizedValue / entry.getValue() * 100f);
-			distanceOverAll += distancePart;
+			distanceList.add(distancePart);
 		}
-		distanceOverAll = distanceOverAll / measuresNormalized.size();
-		return distanceOverAll;
+		
+		if (ignoreErrors) {
+			Collections.sort(distanceList, new Comparator<Float>() {
+				@Override
+				public int compare(Float arg0, Float arg1) {
+					if (arg0 < arg1) {
+						return -1;
+					} else if (arg0 > arg1) {
+						return 1;
+					}
+					return 0;
+				}
+			});
+//			LOG.trace("sorted sublist: {}", distanceList);
+				
+			float distanceAll = 0;
+			int subListTo = (DISTANCE_HYSTERESIS * distanceList.size() / 100);
+			List<Float> distanceSubList = distanceList.subList(0, subListTo);
+//			LOG.trace("sublist from 0 to {}", subListTo);
+			for (Float f : distanceSubList) {
+				distanceAll += f;
+			}
+			return distanceAll / distanceSubList.size();
+		} else {
+			float distanceAll = 0;
+			for (Float f : distanceList) {
+				distanceAll += f;
+			}
+			return distanceAll / distanceList.size();
+		}
 	}
 
 //	private static float findPeaks(List<Long> times,

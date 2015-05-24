@@ -69,35 +69,19 @@ public class MCP3008Binding extends AbstractActiveBinding<MCP3008BindingProvider
 	
 	public void activate() {
 		super.activate();
+		
+		if (config != null && this.gpioLoader != null) {
+			try {
+				this.device = (MCP3008Device) this.gpioLoader.createSPIDevice(this.config, MCP3008Device.class);
+			} catch (GpioException e) {
+				logger.error(e.getMessage());
+			}
+		}
 	}
 	
 	public void deactivate() {
 		// deallocate resources here that are no longer needed and 
 		// should be reset when activating this binding again
-	}
-
-	@Override
-	public void bindingChanged(BindingProvider provider, String itemName) {
-		super.bindingChanged(provider, itemName);
-		
-		try {
-			this.device = (MCP3008Device) this.gpioLoader.createSPIDevice(this.config, MCP3008Device.class);
-		} catch (GpioException e) {
-			logger.error(e.getMessage());
-		}
-	}
-	
-	
-
-	@Override
-	public void allBindingsChanged(BindingProvider provider) {
-		super.allBindingsChanged(provider);
-		
-		try {
-			this.device = (MCP3008Device) this.gpioLoader.createSPIDevice(this.config, MCP3008Device.class);
-		} catch (GpioException e) {
-			logger.error(e.getMessage());
-		}
 	}
 
 	/**
