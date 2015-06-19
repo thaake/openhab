@@ -40,7 +40,8 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 				itemConfig.getBank(),
 				eventPublisher,
 				itemConfig.getItem().getName(),
-				itemConfig.getItem().getClass());
+				itemConfig.getItem().getClass(),
+				itemConfig.getPollInterval());
 		this.pollingMap.put(itemConfig.getPort(), run);
 		this.executors.execute(run);
 	}
@@ -217,15 +218,17 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 		private final EventPublisher eventPublisher;
 		private final String itemName;
 		private final Class<? extends Item> itemType;
+		private final int pollInterval;
 		
 		public PollingThread(byte portMask, char bank, EventPublisher eventPublisher,
-				String itemName, Class<? extends Item> itemType) {
+				String itemName, Class<? extends Item> itemType, int pollInterval) {
 			super();
 			this.portMask = portMask;
 			this.bank = bank;
 			this.eventPublisher = eventPublisher;
 			this.itemName = itemName;
 			this.itemType = itemType;
+			this.pollInterval = pollInterval;
 			LOG.debug("new polling thread created for item: {}", itemName);
 		}
 
@@ -258,7 +261,7 @@ public class MCP23017Device extends I2CDevice<MCP23017Config, MCP23017ItemConfig
 				}
 
 				try {
-					Thread.sleep(10);
+					Thread.sleep(pollInterval);
 				} catch (InterruptedException e) {
 					// its ok
 				}

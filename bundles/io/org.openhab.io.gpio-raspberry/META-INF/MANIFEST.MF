@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: openHAB GPIO Raspberry IO Module
 Bundle-SymbolicName: org.openhab.io.gpio-raspberry;singleton:=true
-Bundle-Version: 1.7.0.qualifier
+Bundle-Version: 1.8.0.qualifier
 Bundle-Vendor: Robert Delbrück
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.openhab.core.binding,

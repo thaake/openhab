@@ -30,6 +30,7 @@ public class MCP23017BindingProviderImpl extends AbstractGenericBindingProvider 
 	private static final String PROP_PORT = "port";
 	private static final String PROP_BANK = "bank";
 	private static final String PROP_IN = "in";
+	private static final String PROP_POLL_INTERVAL = "pollInterval";
 	
 	/**
 	 * {@inheritDoc}
@@ -60,6 +61,7 @@ public class MCP23017BindingProviderImpl extends AbstractGenericBindingProvider 
 		Byte port = null;
 		Character bank = null;
 		boolean in = false;
+		int pollInterval = 100;
 		
 		String[] configParts = bindingConfig.split(" ");
 		for (String configPart : configParts) {
@@ -70,6 +72,8 @@ public class MCP23017BindingProviderImpl extends AbstractGenericBindingProvider 
 				bank = (configPartSplit[1]).charAt(0);
 			} else if (configPartSplit[0].equals(PROP_IN)) {
 				in = Boolean.parseBoolean(configPartSplit[1] + "");
+			} else if (configPartSplit[0].equals(PROP_POLL_INTERVAL)) {
+				pollInterval = Integer.parseInt(configPartSplit[1] + "");
 			}
 		}
 		
@@ -85,7 +89,7 @@ public class MCP23017BindingProviderImpl extends AbstractGenericBindingProvider 
 		}
 		
 		logger.debug("reading item: " + item);
-		super.bindingConfigs.put(item.getName(), new MCP23017ItemConfig(item, port, bank, in));
+		super.bindingConfigs.put(item.getName(), new MCP23017ItemConfig(item, port, bank, in, pollInterval));
 	}
 	
 	@Override
