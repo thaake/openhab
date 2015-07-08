@@ -12,6 +12,8 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Dictionary;
 import java.util.List;
 
@@ -39,6 +41,7 @@ import org.matmaul.freeboxos.system.SystemConfiguration;
 import org.matmaul.freeboxos.upnpav.UPnPAVConfig;
 import org.matmaul.freeboxos.call.CallEntry;
 import org.matmaul.freeboxos.wifi.*;
+import org.matmaul.freeboxos.lan.LanConfig;
 import org.matmaul.freeboxos.lan.LanHostsConfig;
 import org.matmaul.freeboxos.lcd.*;
 import org.matmaul.freeboxos.netshare.SambaConfig;
@@ -67,6 +70,8 @@ public class FreeboxBinding extends AbstractActiveBinding<FreeboxBindingProvider
 	
 	private static FreeboxOsClient fbClient;
 	private static LoginManager loginManager;
+
+	private Calendar lastPhoneCheck;
 	
 	/** 
 	 * the refresh interval which is used to poll values from the Freebox
@@ -95,6 +100,7 @@ public class FreeboxBinding extends AbstractActiveBinding<FreeboxBindingProvider
 		appVersion = String.format("%d.%d",bundle.getVersion().getMajor(),bundle.getVersion().getMinor()); // something like 1.5
 		appID = bundle.getSymbolicName();																// org.openhab.binding.freebox
 		appName = bundle.getHeaders().get("Bundle-Name");												// "openHAB Freebox Binding"
+		lastPhoneCheck = Calendar.getInstance();
 	}
 	
 	private void setItemValue(Item item, boolean value) {
@@ -125,23 +131,277 @@ public class FreeboxBinding extends AbstractActiveBinding<FreeboxBindingProvider
 		try {
 			
 			SystemConfiguration sc = fbClient.getSystemManager().getConfiguration();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case REBOOT: setItemValue(bindingConfig.item,false);
+							break;
+						case CPUB: setItemValue(bindingConfig.item,(long)sc.getTemp_cpub());
+							break;
+						case CPUM: setItemValue(bindingConfig.item,(long)sc.getTemp_cpum());
+							break;
+						case FAN: setItemValue(bindingConfig.item,(long)sc.getFan_rpm());
+							break;
+						case FWVERSION: setItemValue(bindingConfig.item,sc.getFirmware_version());
+							break;
+						case SW: setItemValue(bindingConfig.item,(long)sc.getTemp_sw());
+							break;
+						case UPTIME: setItemValue(bindingConfig.item,sc.getUptimeVal());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("SystemConfiguration: " + e.getMessage());			
+		}
+		
+		try {
+			
 			ConnectionStatus cs = fbClient.getConnectionManager().getStatus();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case BYTESDOWN: setItemValue(bindingConfig.item,cs.getBytes_down());
+							break;
+						case BYTESUP: setItemValue(bindingConfig.item,cs.getBytes_up());
+							break;
+						case IPV4: setItemValue(bindingConfig.item,cs.getIpv4());
+							break;
+						case LINESTATUS: setItemValue(bindingConfig.item, cs.getState());
+							break;
+						case RATEDOWN: setItemValue(bindingConfig.item,cs.getRate_down());
+							break;
+						case RATEUP: setItemValue(bindingConfig.item,cs.getRate_up());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("ConnectionStatus: " + e.getMessage());			
+		}
+		
+		try {
+			
 			WifiGlobalConfig wc = fbClient.getWifiManager().getGlobalConfig();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case WIFISTATUS : setItemValue(bindingConfig.item,wc.getEnabled());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("WifiGlobalConfig: " + e.getMessage());			
+		}
+		
+		try {
+			
 			LCDConfig lcd = fbClient.getLCDManager().getLCDConfig();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case LCDBRIGHTNESS : setItemValue(bindingConfig.item,(long)lcd.getBrightness());
+							break;
+						case LCDORIENTATION : setItemValue(bindingConfig.item,(long)lcd.getOrientation());
+							break;
+						case LCDFORCED : setItemValue(bindingConfig.item,lcd.getOrientationForced());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("LCDConfig: " + e.getMessage());			
+		}
+		
+		try {
+			
 			xDslStatus xdsl = fbClient.getConnectionManager().getxDslStatus();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case XDSLSTATUS : setItemValue(bindingConfig.item,xdsl.getStatus());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("xDslStatus: " + e.getMessage());			
+		}
+		
+		try {
+			
 			FtpConfig fc = fbClient.getFtpManager().getConfig();
-			AirMediaConfig ac = fbClient.getAirMediaManager().getConfig();
-			UPnPAVConfig uc = fbClient.getUPnPAVManager().getConfig();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case FTPSTATUS : setItemValue(bindingConfig.item,fc.getEnabled());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("FtpConfig: " + e.getMessage());			
+		}
+		
+		String mode = null;
+		try {
+			LanConfig lc = fbClient.getLanManager().getLanConfig();
+			mode = lc.getMode();
+		} catch (FreeboxException e) {
+			logger.info("LanConfig: " + e.getMessage());			
+			mode = null;
+		}
+		if ((mode != null) && !mode.equalsIgnoreCase("bridge")) {
+			// Only when Freebox Revolution is not in bridge mode
+			try {
+				
+				AirMediaConfig ac = fbClient.getAirMediaManager().getConfig();
+
+				for (FreeboxBindingProvider provider : providers) {
+					Collection<String> items = provider.getItemNames();
+					
+					for (String itemName: items) {
+						FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+						
+						switch (bindingConfig.commandType) {
+							case AIRMEDIASTATUS : setItemValue(bindingConfig.item,ac.getEnabled());
+								break;
+							default:
+								break;
+						}
+					}
+				}				
+			} catch (FreeboxException e) {
+				logger.info("AirMediaConfig: " + e.getMessage());			
+			}
+			
+			try {
+				
+				UPnPAVConfig uc = fbClient.getUPnPAVManager().getConfig();
+
+				for (FreeboxBindingProvider provider : providers) {
+					Collection<String> items = provider.getItemNames();
+					
+					for (String itemName: items) {
+						FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+						
+						switch (bindingConfig.commandType) {
+							case UPNPAVSTATUS : setItemValue(bindingConfig.item,uc.getEnabled());
+								break;
+							default:
+								break;
+						}
+					}
+				}				
+			} catch (FreeboxException e) {
+				logger.info("UPnPAVConfig: " + e.getMessage());			
+			}
+		}
+		
+		try {
+			
 			SambaConfig sac = fbClient.getNetShareManager().getSambaConfig();
+
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case SAMBAFILESTATUS : setItemValue(bindingConfig.item,sac.getFileShareEnabled());
+							break;
+						case SAMBAPRINTERSTATUS : setItemValue(bindingConfig.item,sac.getPrintShareEnabled());
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("SambaConfig: " + e.getMessage());			
+		}
+		
+		try {
+			
 			LanHostsConfig hc = fbClient.getLanManager().getAllLanHostsConfig();
 			
+			for (FreeboxBindingProvider provider : providers) {
+				Collection<String> items = provider.getItemNames();
+				
+				for (String itemName: items) {
+					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
+					
+					switch (bindingConfig.commandType) {
+						case REACHABLEMAC: setItemValue(bindingConfig.item,hc.isMacReachable(bindingConfig.commandParam));
+							break;
+						case REACHABLEIP: setItemValue(bindingConfig.item,hc.isIpReachable(bindingConfig.commandParam));
+							break;
+						case REACHABLENAME: setItemValue(bindingConfig.item,hc.isHostNameReachable(bindingConfig.commandParam));
+							break;
+						default:
+							break;
+					}
+				}
+			}				
+		} catch (FreeboxException e) {
+			logger.info("LanHostsConfig: " + e.getMessage());			
+		}
+		
+		try {
+			
 			List<CallEntry> appels = fbClient.getCallManager().getCallEntries();
+			PhoneCallComparator comparator = new PhoneCallComparator();
+			Collections.sort(appels, comparator);
 
 			for (FreeboxBindingProvider provider : providers) {
 				Collection<String> items = provider.getItemNames();
 				
 				for (CallEntry call: appels) {
-					if (call.is_new_()) {
+					if (call.getTimeStamp().after(lastPhoneCheck)) {
 						for (String itemName: items) {
 							FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
 							if (bindingConfig.commandParam == null || bindingConfig.commandParam.equalsIgnoreCase(call.getType())) {
@@ -164,74 +424,12 @@ public class FreeboxBinding extends AbstractActiveBinding<FreeboxBindingProvider
 								}
 							}
 						}						
-						call.setNew(false);
-						fbClient.getCallManager().setCallEntry(call);
 					}
 				}
-				
-				for (String itemName: items) {
-					FreeboxBindingConfig bindingConfig = provider.getConfig(itemName);
-					
-					switch (bindingConfig.commandType) {
-						case REBOOT: setItemValue(bindingConfig.item,false);
-							break;
-						case BYTESDOWN: setItemValue(bindingConfig.item,cs.getBytes_down());
-							break;
-						case BYTESUP: setItemValue(bindingConfig.item,cs.getBytes_up());
-							break;
-						case CPUB: setItemValue(bindingConfig.item,(long)sc.getTemp_cpub());
-							break;
-						case CPUM: setItemValue(bindingConfig.item,(long)sc.getTemp_cpum());
-							break;
-						case FAN: setItemValue(bindingConfig.item,(long)sc.getFan_rpm());
-							break;
-						case FWVERSION: setItemValue(bindingConfig.item,sc.getFirmware_version());
-							break;
-						case IPV4: setItemValue(bindingConfig.item,cs.getIpv4());
-							break;
-						case LINESTATUS: setItemValue(bindingConfig.item, cs.getState());
-							break;
-						case RATEDOWN: setItemValue(bindingConfig.item,cs.getRate_down());
-							break;
-						case RATEUP: setItemValue(bindingConfig.item,cs.getRate_up());
-							break;
-						case SW: setItemValue(bindingConfig.item,(long)sc.getTemp_sw());
-							break;
-						case UPTIME: setItemValue(bindingConfig.item,sc.getUptimeVal());
-							break;
-						case WIFISTATUS : setItemValue(bindingConfig.item,wc.getEnabled());
-							break;
-						case LCDBRIGHTNESS : setItemValue(bindingConfig.item,(long)lcd.getBrightness());
-							break;
-						case LCDORIENTATION : setItemValue(bindingConfig.item,(long)lcd.getOrientation());
-							break;
-						case LCDFORCED : setItemValue(bindingConfig.item,lcd.getOrientationForced());
-							break;
-						case XDSLSTATUS : setItemValue(bindingConfig.item,xdsl.getStatus());
-							break;
-						case FTPSTATUS : setItemValue(bindingConfig.item,fc.getEnabled());
-							break;
-						case AIRMEDIASTATUS : setItemValue(bindingConfig.item,ac.getEnabled());
-							break;
-						case UPNPAVSTATUS : setItemValue(bindingConfig.item,uc.getEnabled());
-							break;
-						case SAMBAFILESTATUS : setItemValue(bindingConfig.item,sac.getFileShareEnabled());
-							break;
-						case SAMBAPRINTERSTATUS : setItemValue(bindingConfig.item,sac.getPrintShareEnabled());
-							break;
-						case REACHABLEMAC: setItemValue(bindingConfig.item,hc.isMacReachable(bindingConfig.commandParam));
-							break;
-						case REACHABLEIP: setItemValue(bindingConfig.item,hc.isIpReachable(bindingConfig.commandParam));
-							break;
-						case REACHABLENAME: setItemValue(bindingConfig.item,hc.isHostNameReachable(bindingConfig.commandParam));
-							break;
-						default:
-							break;
-					}
-				}
+				lastPhoneCheck.setTimeInMillis(System.currentTimeMillis());
 			}				
 		} catch (FreeboxException e) {
-			logger.info(e.getMessage());			
+			logger.info("CallEntries: " + e.getMessage());			
 		}
 	}
 
@@ -492,5 +690,23 @@ public class FreeboxBinding extends AbstractActiveBinding<FreeboxBindingProvider
 				}
 			}
 		}				
+	}
+	
+	/**
+	 * A comparator of phone calls by ascending date and time
+	 */
+	private class PhoneCallComparator implements Comparator<CallEntry> {
+
+		@Override
+		public int compare(CallEntry call1, CallEntry call2) {
+			int result = 0;
+			if (call1.getTimeStamp().before(call2.getTimeStamp())) {
+				result = -1;
+			} else if (call1.getTimeStamp().after(call2.getTimeStamp())) {
+				result = 1;
+			}
+			return result;
+		}
+
 	}
 }
