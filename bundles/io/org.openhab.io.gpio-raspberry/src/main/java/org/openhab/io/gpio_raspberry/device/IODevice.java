@@ -16,6 +16,7 @@ import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioPinDigitalInput;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
 import com.pi4j.io.gpio.Pin;
+import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.PinPullResistance;
 import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
@@ -113,6 +114,7 @@ public class IODevice extends Device<IOConfig, GpioIOItemConfig> {
 		
 		
 		try {
+//			pin.export(PinMode.DIGITAL_OUTPUT);
 			if (command instanceof OnOffType) {
 				boolean on = false;
 				if (((OnOffType) command) == OnOffType.ON) {
@@ -131,7 +133,7 @@ public class IODevice extends Device<IOConfig, GpioIOItemConfig> {
 				throw new IllegalStateException("unsupported command: " + command);
 			}
 		} finally {
-			pin.unexport();
+//			pin.unexport();
 		}
 		return null;
 	}
