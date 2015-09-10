@@ -44,13 +44,14 @@ public class LircTransceiver {
 			try {
 				socket = new Socket(host, port);
 			} catch (ConnectException e) {
+				LOG.error(String.format("cannot create connection to LIRC (with host %s and port %s): %s", host, port, e.getMessage()), e);
 				socket = null;
 				return false;
 			}
 			bis = new BufferedInputStream(socket.getInputStream());
 			bos = new BufferedOutputStream(socket.getOutputStream());
 		} catch(IOException e) {
-			LOG.error("cannot open socket", e);
+			LOG.error("cannot open socket: " + e.getMessage(), e);
 			return false;
 		}
 		return true;
@@ -58,10 +59,14 @@ public class LircTransceiver {
 	
 	public void disconnect() {
 		if (this.socket != null) {
-			this.senderThread.interrupt();
-			this.senderThread = null;
-			this.listenerThread.interrupt();
-			this.listenerThread = null;
+			if (this.senderThread != null) {
+				this.senderThread.interrupt();
+				this.senderThread = null;
+			}
+			if (this.listenerThread != null) {
+				this.listenerThread.interrupt();
+				this.listenerThread = null;
+			}
 			try {
 				this.socket.close();
 			} catch (IOException e) {
@@ -178,35 +183,36 @@ public class LircTransceiver {
 				while (!isInterrupted()) {
 					if (!isConnected()) {
 						LOG.warn("lirc is not connected");
-						return;
-					}
-					
-					if (!sendQueue.isEmpty()) {
-						LircBindingConfig config = sendQueue.poll();
-						if (config == null) {
-							LOG.warn("config is null, cannot send");
-							continue;
-						}
-						
-						try {
-							StringBuffer sb = new StringBuffer();
-							sb.append("SEND_ONCE ");
-							sb.append(config.getDevice() + " ");
-							sb.append(config.getCommand());
-							sb.append("\n");
-							LOG.debug("sending data: " + sb.toString());
-							bos.write(sb.toString().getBytes("UTF-8"));
-							bos.flush();
-						} catch (IOException e) {
-							LOG.error("cannot send data", e);
-							LOG.info("restarting sender...");
-							sendQueue.add(config);
-							connect();
+					} else {
+						if (!sendQueue.isEmpty()) {
+							LircBindingConfig config = sendQueue.poll();
+							if (config == null) {
+								LOG.warn("config is null, cannot send");
+								continue;
+							}
+							
+							try {
+								StringBuffer sb = new StringBuffer();
+								sb.append("SEND_ONCE ");
+								sb.append(config.getDevice() + " ");
+								sb.append(config.getCommand());
+								sb.append("\n");
+								LOG.debug("sending data: " + sb.toString());
+								bos.write(sb.toString().getBytes("UTF-8"));
+								bos.flush();
+							} catch (IOException e) {
+								LOG.error("cannot send data", e);
+								LOG.info("restarting sender...");
+								sendQueue.add(config);
+								connect();
+							}
+						} else {
+							LOG.trace("send queue is empty");
 						}
 					}
 					
 					try {
-						Thread.sleep(10);
+						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

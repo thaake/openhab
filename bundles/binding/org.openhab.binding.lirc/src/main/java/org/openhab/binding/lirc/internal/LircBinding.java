@@ -42,7 +42,7 @@ public class LircBinding extends AbstractBinding<LircBindingProvider> implements
 	private LircTransceiver transceiver;
 	
 	private String host;
-	private int port;
+	private Integer port;
 	
 	@Override
 	public void updated(Dictionary<String, ?> properties)
@@ -58,9 +58,6 @@ public class LircBinding extends AbstractBinding<LircBindingProvider> implements
 			this.host = properties.get(PROP_HOST) + "";
 			this.port = Integer.parseInt(properties.get(PROP_PORT) + "");
 			logger.debug("host '{}' and port '{}' successfully read", host, port);
-			
-			logger.debug("starting transceiver...");
-			this.transceiver = new LircTransceiver(this.host, this.port);
 		}
 	}
 	
@@ -75,10 +72,17 @@ public class LircBinding extends AbstractBinding<LircBindingProvider> implements
 			
 			@Override
 			public void run() {
+				if (host == null || port == null) {
+					logger.info("configuration is currently not loaded, waiting with connection...");
+					return;
+				}
+				logger.trace("checking if tranceiver is running...");
 				if (transceiver == null) {
+					logger.trace("creating new tranceiver...");
 					transceiver = new LircTransceiver(host, port);
 				}
 				if (transceiver != null && !transceiver.isConnected()) {
+					logger.trace("tranceiver not connected, connecting...");
 					if (transceiver.connect()) {
 						transceiver.addListener(LircBinding.this);
 						transceiver.startListener();
@@ -86,7 +90,7 @@ public class LircBinding extends AbstractBinding<LircBindingProvider> implements
 					}
 				}
 			}
-		}, 10000);
+		}, 10000, 30000);
 	}
 
 	@Override
